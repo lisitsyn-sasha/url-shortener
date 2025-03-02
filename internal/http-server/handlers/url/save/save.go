@@ -7,31 +7,17 @@ import (
 	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
+	"url-shortener/constants"
 	"url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/lib/random"
 	"url-shortener/internal/storage"
 )
 
-type Request struct {
-	URL   string `json:"url" validate:"required,url"`
-	Alias string `json:"alias,omitempty"`
-}
-
-type Response struct {
-	response.Response
-	Alias string `json:"alias,omitempty"`
-}
-
-// TODO: возможно стоит перенести в config
-const aliasLength = 6
-
 func New(log *slog.Logger, urlSaver storage.URLSaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.url.save.New"
-
 		log = log.With(
-			slog.String("op", op),
+			slog.String("op", constants.UrlSaveMew),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
@@ -63,7 +49,7 @@ func New(log *slog.Logger, urlSaver storage.URLSaver) http.HandlerFunc {
 
 		alias := req.Alias
 		if alias == "" {
-			alias = random.NewRandomString(aliasLength)
+			alias = random.NewRandomString(constants.AliasLength)
 		}
 
 		id, err := urlSaver.SaveURL(r.Context(), req.URL, alias)

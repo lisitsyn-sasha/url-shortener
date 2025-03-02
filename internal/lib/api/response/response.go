@@ -4,27 +4,18 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"strings"
-)
-
-type Response struct {
-	Status string `json:"status"`
-	Error  string `json:"error,omitempty"`
-}
-
-const (
-	StatusOk    = "OK"
-	StatusError = "Error"
+	"url-shortener/constants"
 )
 
 func OK() Response {
 	return Response{
-		Status: StatusOk,
+		Status: constants.StatusOk,
 	}
 }
 
 func Error(msg string) Response {
 	return Response{
-		Status: StatusError,
+		Status: constants.StatusError,
 		Error:  msg,
 	}
 }
@@ -44,7 +35,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 	}
 
 	return Response{
-		Status: StatusError,
+		Status: constants.StatusError,
 		Error:  strings.Join(errMsgs, ", "),
 	}
 }

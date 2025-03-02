@@ -6,24 +6,19 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"url-shortener/constants"
 )
 
-type Storage struct {
-	db *pgxpool.Pool
-}
-
 func New(connString string) (*Storage, error) {
-	const op = "storage.postgres.New"
-
 	db, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", constants.PostgresNew, err)
 	}
 
 	err = createTables(db)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", constants.PostgresNew, err)
 	}
 
 	return &Storage{db: db}, nil
@@ -34,8 +29,6 @@ func (s *Storage) Close() {
 }
 
 func createTables(db *pgxpool.Pool) error {
-	const op = "storage.postgres.createTables"
-
 	_, err := db.Exec(context.Background(), `
         CREATE TABLE IF NOT EXISTS url(
             id SERIAL PRIMARY KEY,
@@ -44,24 +37,22 @@ func createTables(db *pgxpool.Pool) error {
         );
     `)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", constants.PostgresCreateTable, err)
 	}
 
 	_, err = db.Exec(context.Background(), `
         CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);
     `)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", constants.PostgresCreateTable, err)
 	}
 
 	return nil
 }
 
 func (s *Storage) SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error) {
-	const op = "storage.postgres.SaveURL"
-
 	if urlToSave == "" || alias == "" {
-		return 0, fmt.Errorf("%s: url and alias must not be empty", op)
+		return 0, fmt.Errorf("%s: url and alias must not be empty", constants.PostgresSaveUrl)
 	}
 
 	var id int64
@@ -73,17 +64,15 @@ func (s *Storage) SaveURL(ctx context.Context, urlToSave string, alias string) (
 
 	err := s.db.QueryRow(ctx, query, urlToSave, alias).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return 0, fmt.Errorf("%s: %w", constants.PostgresSaveUrl, err)
 	}
 
 	return id, nil
 }
 
 func (s *Storage) GetURL(ctx context.Context, alias string) (string, error) {
-	const op = "storage.postgres.GetURL"
-
 	if alias == "" {
-		return "", fmt.Errorf("%s: alias must not be empty", op)
+		return "", fmt.Errorf("%s: alias must not be empty", constants.PostgresGetUrl)
 	}
 
 	var url string
@@ -93,9 +82,9 @@ func (s *Storage) GetURL(ctx context.Context, alias string) (string, error) {
 	err := s.db.QueryRow(ctx, query, alias).Scan(&url)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", fmt.Errorf("%s: alias not found", op)
+			return "", fmt.Errorf("%s: alias not found", constants.PostgresGetUrl)
 		}
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", constants.PostgresGetUrl, err)
 	}
 
 	return url, nil
