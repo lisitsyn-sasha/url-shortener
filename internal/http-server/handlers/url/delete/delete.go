@@ -1,4 +1,4 @@
-package save
+package delete
 
 import (
 	"errors"
@@ -14,10 +14,10 @@ import (
 	"url-shortener/internal/storage"
 )
 
-func New(log *slog.Logger, urlSaver storage.URLSaver) http.HandlerFunc {
+func New(log *slog.Logger, urlDeleter storage.URLDeleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log = log.With(
-			slog.String("op", constants.UrlSaveNew),
+			slog.String("op", constants.UrlDeleteNew),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
@@ -52,23 +52,23 @@ func New(log *slog.Logger, urlSaver storage.URLSaver) http.HandlerFunc {
 			alias = random.NewRandomString(constants.AliasLength)
 		}
 
-		id, err := urlSaver.SaveURL(r.Context(), req.URL, alias)
-		if errors.Is(err, storage.ErrURLExists) {
-			log.Info("url already exists", slog.String("url", req.URL))
+		id, err := urlDeleter.DeleteUrl(r.Context(), alias)
+		if errors.Is(err, storage.ErrAliasExists) {
+			log.Info("alias already exists", slog.String("alias", req.Alias))
 
-			render.JSON(w, r, response.Error("url already exists"))
+			render.JSON(w, r, response.Error("alias already exists"))
 
 			return
 		}
 		if err != nil {
-			log.Error("failed to add url", sl.Err(err))
+			log.Error("failed to delete url", sl.Err(err))
 
-			render.JSON(w, r, response.Error("failed to add url"))
+			render.JSON(w, r, response.Error("failed to delete url"))
 
 			return
 		}
 
-		log.Info("url added", slog.Int64("id", id))
+		log.Info("url deleted", slog.Int64("id", id))
 
 		render.JSON(w, r, Response{
 			Response: response.OK(),

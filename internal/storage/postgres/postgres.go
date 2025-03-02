@@ -50,26 +50,6 @@ func createTables(db *pgxpool.Pool) error {
 	return nil
 }
 
-func (s *Storage) SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error) {
-	if urlToSave == "" || alias == "" {
-		return 0, fmt.Errorf("%s: url and alias must not be empty", constants.PostgresSaveUrl)
-	}
-
-	var id int64
-	query := `
-		INSERT INTO url(url, alias) VALUES($1, $2)
-		ON CONFLICT (alias) DO UPDATE SET id = url.id
-		RETURNING id
-	`
-
-	err := s.db.QueryRow(ctx, query, urlToSave, alias).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", constants.PostgresSaveUrl, err)
-	}
-
-	return id, nil
-}
-
 func (s *Storage) GetURL(ctx context.Context, alias string) (string, error) {
 	if alias == "" {
 		return "", fmt.Errorf("%s: alias must not be empty", constants.PostgresGetUrl)
@@ -90,4 +70,40 @@ func (s *Storage) GetURL(ctx context.Context, alias string) (string, error) {
 	return url, nil
 }
 
-// TODO: func (s *Storage) DeleteURL(alias string) error {}
+func (s *Storage) SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error) {
+	if urlToSave == "" || alias == "" {
+		return 0, fmt.Errorf("%s: url and alias must not be empty", constants.PostgresSaveUrl)
+	}
+
+	var id int64
+	query := `
+		INSERT INTO url(url, alias) VALUES($1, $2)
+		ON CONFLICT (alias) DO UPDATE SET id = url.id
+		RETURNING id
+	`
+
+	err := s.db.QueryRow(ctx, query, urlToSave, alias).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", constants.PostgresSaveUrl, err)
+	}
+
+	return id, nil
+}
+
+func (s *Storage) DeleteUrl(ctx context.Context, alias string) (int64, error) {
+	if alias == "" {
+		return 0, fmt.Errorf("%: alias must not be empty", constants.PostgresDeleteUrl)
+	}
+
+	var id int64
+	query := `
+    	DELETE FROM url WHERE alias = $1 RETURNING id
+	`
+
+	err := s.db.QueryRow(ctx, query, alias).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", constants.PostgresDeleteUrl, err)
+	}
+
+	return id, nil
+}
